@@ -308,6 +308,19 @@ static void cb_gelf_flush(struct flb_event_chunk *event_chunk,
         }
         else {
             flb_plg_error(ctx->ins, "error encoding to GELF");
+
+            size_t off = 0, cnt = 0;
+            msgpack_object *p;
+            msgpack_unpacked_init(&result);
+            struct flb_time tmp;
+            while (msgpack_unpack_next(&result, event_chunk->data, event_chunk->size, &off) == MSGPACK_UNPACK_SUCCESS) {
+                printf("[%zd] %s: [", cnt++, event_chunk->tag);
+                flb_time_pop_from_msgpack(&tmp, &result, &p);
+                printf("%"PRIu32".%09lu, ", (uint32_t)tmp.tm.tv_sec, tmp.tm.tv_nsec);
+                msgpack_object_print(stdout, *p);
+                printf("]\n");
+            }
+            msgpack_unpacked_destroy(&result);
         }
 
         flb_sds_destroy(s);
